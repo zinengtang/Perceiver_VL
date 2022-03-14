@@ -1,6 +1,6 @@
 # Perceiver_VL
 
-To speed up the training, we use mixed precision with [Apex](https://github.com/NVIDIA/apex).
+To speed up the training, we use mixed precision.
 
 ## Implementation
 ```

@@ -26,11 +26,7 @@ class BaseVideoDataset(torch.utils.data.Dataset):
         image_only=None,
         video_only=False,
     ):
-        """
-        data_dir : where dataset file *.arrow lives; existence should be guaranteed via DataModule.prepare_data
-        transform_keys : keys for generating augmented views of images
-        text_column_name : pyarrow table column name that has list of strings as elements
-        """
+
         super().__init__()
               
         self.metadata_dir = data_dir
@@ -46,8 +42,6 @@ class BaseVideoDataset(torch.utils.data.Dataset):
         self.draw_false_video = draw_false_video
         self.max_frames = max_frames
         self.max_text_len = max_text_len
-#         self.transforms = video_transform_dict()
-#         self.split = split
         self.subsample = 1
         
         self._load_metadata()
@@ -67,7 +61,7 @@ class BaseVideoDataset(torch.utils.data.Dataset):
 
     def _get_video(self, index):
         video_data = self.video_loader.get_video_data(self.metadata[self.keys[index]]['video_path'])
-#         print(video_data[0])
+
         return {"video_data": video_data,
                 "raw_index": index,
                 "v_index": index,}   

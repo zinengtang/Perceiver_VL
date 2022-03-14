@@ -1,0 +1,13 @@
+pytorch_lightning
+transformers==4.2.1
+Pillow
+tqdm
+ipdb
+numpy
+einops
+pyarrow
+sacred==0.5.2
+pandas
+ffmpeg-python
+opencv-python
+git+https://github.com/rwightman/pytorch-image-models.git

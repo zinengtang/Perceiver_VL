@@ -12,9 +12,6 @@ import numpy as np
 from PIL import Image
 from model.transforms import keys_to_transforms
 
-# homedir = '/net/bvisionserver4/playpen1/terran/imagenet21k_resized/'
-# homedir = '../imagenet21k_resized/'
-
 class ImagenetDataset(torch.utils.data.Dataset):
     def __init__(
         self,
@@ -43,39 +40,7 @@ class ImagenetDataset(torch.utils.data.Dataset):
         self.image_paths = []
         self.data_dir = data_dir
         self.classes = json.load(open(data_dir+'classes.json', 'r'))
-        
-#         if split == 'train':
-#             self.image_paths = np.load(data_dir+'train_info.npy')
-#             if not os.path.exists(data_dir+'train_classes.npy'):
-#                 self.image_classes = [item.split('/')[-1].split('_')[0] for item in tqdm(self.image_paths)]
-#                 np.save(data_dir+'train_classes.npy', np.array(self.image_classes))
-#             else:
-#                 self.image_classes = np.load(data_dir+'train_classes.npy')
-            
-#         else:
-#             self.image_paths = np.load(data_dir+'valid_info.npy')
-#             if not os.path.exists(data_dir+'valid_classes.npy'):
-#                 self.image_classes = [item.split('/')[-1].split('_')[0] for item in tqdm(self.image_paths)]
-#                 np.save(data_dir+'valid_classes.npy', np.array(self.image_classes))
-#             else:
-#                 self.image_classes = np.load(data_dir+'valid_classes.npy')
-#             self.image_classes = [item.split('/')[-1].split('_')[0] for item in tqdm(self.image_paths)]
-#             np.save(data_dir+'valid_classes.npy', np.array(self.image_classes))
-#         image_paths = os.listdir()
-#         if split == 'train':
-#             if not os.path.exists(data_dir+'train_info.npy'):
-#                 for key in tqdm(self.classes.keys()):
-#                     self.image_paths += list(glob.iglob(data_dir+key+'*'))[:-50]                
-#                 np.save(data_dir+'train_info.npy', np.array(self.image_paths))
-#             else:
-#                 self.image_paths = np.load(data_dir+'train_info.npy')
-#         else:
-#             if not os.path.exists(data_dir+'valid_info.npy'):
-#                 for key in tqdm(self.classes.keys()):
-#                     self.image_paths += list(glob.iglob(data_dir+key+'*'))[-50:]
-#                 np.save(data_dir+'valid_info.npy', np.array(self.image_paths))
-#             else:
-#                 self.image_paths = np.load(data_dir+'valid_info.npy')
+
         
         if split == 'train':
             if not os.path.exists(data_dir+'train_info.npy'):
@@ -102,13 +67,9 @@ class ImagenetDataset(torch.utils.data.Dataset):
                 np.save(data_dir+'valid_classes.npy', np.array(self.image_classes))
             else:
                 self.image_classes = np.load(data_dir+'valid_classes.npy')
-        print(len(self.image_paths))
-#         self.classes = os.listdir(data_dir+'imagenet21k_train/') + os.listdir(data_dir+'imagenet21k_small_classes/')
-#         self.classes = dict(zip(self.classes, range(len(self.classes))))
-        if self.data_dir == "datasets/winter21_whole/":
-            self.data_dir = ""
-        elif "/net/bvisionserver14" in self.data_dir:
-            self.data_dir = "/net/bvisionserver14/playpen2/terran/perceiver/"
+
+
+        self.data_dir = ""
         self.draw_false_image = draw_false_image
         self.image_only = image_only
         self.image_size = image_size
@@ -123,25 +84,13 @@ class ImagenetDataset(torch.utils.data.Dataset):
 
 
     def get_image(self, index,):
-#         start=time.time()
-#         '/net/bvisionserver14/playpen2/terran/perceiver/'+
-
-#         image = np.array(Image.open(self.image_paths[index]).convert("RGB").resize((self.image_size, self.image_size),Image.ANTIALIAS))
         image_path = self.data_dir+self.image_paths[index]
         image = Image.open(image_path).convert("RGB")
-        
-#     .resize((self.image_size, self.image_size),Image.ANTIALIAS)
-#     .convert("RGB")
-#         print(image.mode)
-#         if not image.mode == 'RGB':
-# #             print(image.mode)
-#             image = image.convert("RGB")
-# #             image.save(self.image_paths[index])
+
 
         if image.size != (self.image_size, self.image_size):
             image = image.resize((self.image_size, self.image_size),Image.ANTIALIAS)
-#             image.save(self.image_paths[index])
-#         print(time.time()-start)    
+
         image_tensor = [tr(image) for tr in self.transforms] 
         return {
             "image": image_tensor,
@@ -151,7 +100,7 @@ class ImagenetDataset(torch.utils.data.Dataset):
     def get_false_image(self, rep, image_key="image"):
         random_index = random.randint(0, len(self.image_paths) - 1)
         image = Image.open(self.image_paths[index])
-#         .convert("RGB")
+
         if image.size != (self.image_size, self.image_size):
             image = image.resize((self.image_size, self.image_size),Image.ANTIALIAS)
             image.save(self.image_paths[index])
@@ -160,31 +109,21 @@ class ImagenetDataset(torch.utils.data.Dataset):
     
     def get_class(self, index,):
         item_class = self.image_classes[index]
-#         self.image_paths[index].split('/')[-1].split('_')[0]
         item_class = self.classes[item_class]
         return {
             "label": item_class,
             "raw_index": index,
         }
 
-    def get_suite(self, index):        
-#         result = None
-#         while result is None:
-#             try:
+    def get_suite(self, index):   
         ret = dict()
         ret.update(self.get_image(index))
         
         if not self.image_only:
             cls = self.get_class(index)
             ret.update(cls)
-#         print('2', time.time()-start)
         for i in range(self.draw_false_image):
             ret.update(self.get_false_image(i))
-#         print('3', time.time()-start)
-#         result = True
-#             except Exception as e:
-#                 print(f"Error while read sample idx {index}")
-#                 index = random.randint(0, len(self.index_mapper) - 1)
         return ret
     
     def __getitem__(self, index):

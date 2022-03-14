@@ -7,9 +7,9 @@ pip install -r requirements.txt
 
 ## Pretraining
 ```bash
-bash scripta/webvid_pretrain.sh # Pretraining on WebVid
-bash scripta/gcc_pretrain.sh # Pretrainig on CC
-bash scripta/co_pretrain.sh # Pretraining on CC+WebVid
+bash scripts/webvid_pretrain.sh # Pretraining on WebVid
+bash scripts/gcc_pretrain.sh # Pretrainig on CC
+bash scripts/co_pretrain.sh # Pretraining on CC+WebVid
 ```
 
 

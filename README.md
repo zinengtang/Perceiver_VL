@@ -1,24 +1,20 @@
 # Perceiver_VL
 
-To speed up the training, we use mixed precision.
-
-## Implementation
-```
-Run pip install -r requirements.txt
+## Installation
+```Bash
+pip install -r requirements.txt
 ```
 
-## Run Pretraining
-```
-Bash scripta/webvid_pretrain.sh #For webvid only
-Bash scripta/gcc_pretrain.sh #For cc only
-Bash scripta/co_pretrain.sh #For both webvid and cc
+## Pretraining
+```bash
+bash scripta/webvid_pretrain.sh # Pretraining on WebVid
+bash scripta/gcc_pretrain.sh # Pretrainig on CC
+bash scripta/co_pretrain.sh # Pretraining on CC+WebVid
 ```
 
 
-## Run Finetuning
+## Finetuning
+```bash
+bash scripts/msrvtt_vrtr_finetune.sh # Finetuning on MSRVTT
+bash scripts/vqa_finetune.sh # Finetuning on VQAv2
 ```
-Bash scripta/msrvtt_vrtr_finetune.sh #For MSRVTT retrieval finetune
-Bash scripta/vqa_finetune.sh #For VQAv2 finetune
-```
-
-

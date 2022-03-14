@@ -10,4 +10,3 @@ sacred==0.5.2
 pandas
 ffmpeg-python
 opencv-python
-git+https://github.com/rwightman/pytorch-image-models.git

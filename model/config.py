@@ -115,8 +115,8 @@ def config():
 # Named configs for "environment" which define gpus and nodes, and paths
 @ex.named_config
 def env_dandelin():
-    data_root = "/data2/dsets/dataset"
-    log_dir = "/data2/vilt/result"
+    data_root = "."
+    log_dir = "."
     num_gpus = 8
     num_nodes = 1
 
@@ -126,7 +126,6 @@ def env_dandelin():
 def task_cls_imagenet():
     exp_name = "cls_imagenet"
     datasets = ["imagenet"]
-#     loss_names = _loss_names({"recon": 1})
     loss_names = _loss_names({"imagenet": 1})
     batch_size = 4096
     imagenet_label_size = 21000
@@ -152,7 +151,6 @@ def task_cls_imagenet1k():
 @ex.named_config
 def task_mlm_itm():
     exp_name = "mlm_itm"
-#     datasets = ["coco", "vg", "sbu", "gcc"]
     datasets = ["gcc"]
     loss_names = _loss_names({"itm": 1, "mlm": 1})
     max_epoch = 10
@@ -182,7 +180,6 @@ def task_mlm_vtm():
 def task_mlm_itm_vtm():
     exp_name = "mlm_itm_vtm"
     datasets = ["gcc", "webvid"]
-#     loss_names = _loss_names({"itm": 1, "vtm": 1, "mlm": 1})
     loss_names = _loss_names({"mlm": 1, "mlm_video":1, "itm": 1, "vtm": 1})
     max_epoch = 10
     max_image_len = 200
@@ -220,8 +217,6 @@ def task_finetune_vqa():
     learning_rate = 1e-4
     val_check_interval = 0.1
     lr_mult = 10
-
-# Named configs for "etc" which are orthogonal to "env" and "task", need to be added at the end
 
 
 @ex.named_config

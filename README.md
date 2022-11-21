@@ -50,7 +50,7 @@ bash scripts/co_pretrain.sh
 bash scripts/msrvtt_vrtr_finetune.sh
 ```
 
-## Released Models
+<!-- ## Released Models
 
 The model weights are hosted in [Huggingface Hub](https://huggingface.co/Perceiver-VL/models/tree/main).  
 
@@ -59,7 +59,7 @@ The details of each released Perceiver-VL models are described in the table belo
 | Training    | Component | Link |
 | --- | --- | --- |
 | Pre-trained on Webvid + GCC videos and images|Encoder + Decoder|[[link]](https://huggingface.co/Percever-VL/models/resolve/main/Percever-VL.ckpt)|
-
+ -->
 
 
 ## Folder Structure

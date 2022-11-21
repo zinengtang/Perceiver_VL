@@ -39,15 +39,35 @@ pip install -r requirements.txt
 ### Pretraining (scripts)
 
 ```
-# Example
+# Pretrain on Webvid + GCC
 bash scripts/co_pretrain.sh
+```
+
+```
+# Pretrain on Webvid
+bash scripts/webvid_pretrain.sh
+```
+
+```
+# Pretrain on GCC
+bash scripts/gcc_pretrain.sh
+```
+
+```
+# Pretrain on ImageNet
+bash scripts/imagenet_pretrain.sh
 ```
 
 ### Finetuning on Downstream (scripts)
 
 ```
-# Example
+# Fintune on MSRVTT Retrieval
 bash scripts/msrvtt_vrtr_finetune.sh
+```
+
+```
+# Fintune on VQA
+bash scripts/vqa_finetune.sh
 ```
 
 <!-- ## Released Models

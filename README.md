@@ -32,7 +32,6 @@ conda create -n Perceiver-VL python=3.8   # You can also use other environment.
 ```
 pip install -r requirements.txt
 ```
-<!-- 
 
 
 ## Training

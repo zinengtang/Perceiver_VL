@@ -86,7 +86,7 @@ The details of each released Perceiver-VL models are described in the table belo
 
 # Code Structures
 ```
-TVLT
+Perceiver_VL
 │
 ├── assets                          # illustrations                          
 │   └── architecture.png

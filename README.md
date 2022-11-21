@@ -82,9 +82,8 @@ The details of each released Perceiver-VL models are described in the table belo
  -->
 
 
-## Folder Structure
+## Code Structure
 
-# Code Structures
 ```
 Perceiver_VL
 │

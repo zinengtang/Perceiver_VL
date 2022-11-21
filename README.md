@@ -84,7 +84,41 @@ The details of each released Perceiver-VL models are described in the table belo
 
 ## Folder Structure
 
-See [Folder Structure](CODE.md)
+# Code Structures
+```
+TVLT
+│
+├── assets                          # illustrations                          
+│   └── architecture.png
+│
+├── model                           # main source       
+│   ├── datamodules                 # pytorch-lightning wrap
+│   │   ├── datamodule_base.py
+│   │   └── ...          
+│   └── datasets                    # Datasets
+│   │   ├── vqa_dataset.py     
+│   │   └── ...    
+│   ├── gadgets     
+│   │   └── my_metrics.py           # metric utils
+│   ├── modules                     
+│   │   ├── heads.py                # model heads
+│   │   ├── model_module.py         # pytorch-lightning wrap for model
+│   │   ├── model_utils.py          # pytorch-lightning wrap for training metrics
+│   │   ├── objectives.py           # pretraining/finetuning objectives
+│   │   └── perceiver_vl.py         # main model
+│   ├── transforms                  # image transformation utils
+│   │   └── ... 
+│   └── config.py                   # all configurations
+│
+├── scripts                         # all scripts
+│   ├── finetune_mosei.sh 
+│   ├── pretrain_mae_vam.sh
+│   └── ... 
+│
+├── run.py                          # main
+└── requirements.txt                
+```
+
 
 ## Citation
 ```

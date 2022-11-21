@@ -15,7 +15,7 @@ Learning vision-language representation by iterative latent attention that scale
   <big><b>Zineng Tang, Jaemin Cho, Jie Lei, Mohit Bansal</b></big>
 </p> -->
 
-Perceiver
+Perceiver-VL Architecture Overview
 
 <p align="center">
   <img align="middle" width="800" src="assets/architecture.png"/>

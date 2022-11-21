@@ -69,7 +69,7 @@ See [Folder Structure](CODE.md)
 ## Citation
 ```
 @inproceedings{tang2023wacv,
-  title     = {PERCEIVER-VL: Efficient Vision-and-Language Modeling with Iterative Latent Attention},
+  title     = {Perceiver-VL: Efficient Vision-and-Language Modeling with Iterative Latent Attention},
   author    = {Zineng Tang and Jaemin Cho and Jie Lei and Mohit Bansal},
   booktitle = {WACV},
   year      = {2023}

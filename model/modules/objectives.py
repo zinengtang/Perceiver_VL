@@ -290,65 +290,6 @@ def compute_vqa(pl_module, batch):
     return ret
 
 
-def compute_nlvr2(pl_module, batch):
-    infer1 = pl_module.infer(
-        batch, mask_text=False, mask_visual=False, image_token_type_idx=1
-    )
-    infer2 = pl_module.infer(
-        batch, mask_text=False, mask_visual=False, image_token_type_idx=2
-    )
-
-    cls_feats = torch.cat([infer1["cls_feats"], infer2["cls_feats"]], dim=-1)
-    nlvr2_logits = pl_module.nlvr2_classifier(cls_feats)
-
-    nlvr2_labels = batch["answers"]
-    nlvr2_labels = torch.tensor(nlvr2_labels).to(pl_module.device).long()
-    nlvr2_loss = F.cross_entropy(nlvr2_logits, nlvr2_labels)
-
-    ret = {
-        "nlvr2_loss": nlvr2_loss,
-        "nlvr2_logits": nlvr2_logits,
-        "nlvr2_labels": nlvr2_labels,
-    }
-
-    phase = "train" if pl_module.training else "val"
-
-    if phase == "train":
-        loss = getattr(pl_module, f"{phase}_nlvr2_loss")(ret["nlvr2_loss"])
-        acc = getattr(pl_module, f"{phase}_nlvr2_accuracy")(
-            ret["nlvr2_logits"], ret["nlvr2_labels"]
-        )
-        pl_module.log(f"nlvr2/{phase}/loss", loss)
-        pl_module.log(f"nlvr2/{phase}/accuracy", acc)
-    else:
-        dev_batches = [i for i, n in enumerate(batch["table_name"]) if "dev" in n]
-        test_batches = [i for i, n in enumerate(batch["table_name"]) if "test" in n]
-
-        if dev_batches:
-            dev_loss = getattr(pl_module, f"dev_nlvr2_loss")(
-                F.cross_entropy(
-                    ret["nlvr2_logits"][dev_batches], ret["nlvr2_labels"][dev_batches]
-                )
-            )
-            dev_acc = getattr(pl_module, f"dev_nlvr2_accuracy")(
-                ret["nlvr2_logits"][dev_batches], ret["nlvr2_labels"][dev_batches]
-            )
-            pl_module.log(f"nlvr2/dev/loss", dev_loss)
-            pl_module.log(f"nlvr2/dev/accuracy", dev_acc)
-        if test_batches:
-            test_loss = getattr(pl_module, f"test_nlvr2_loss")(
-                F.cross_entropy(
-                    ret["nlvr2_logits"][test_batches], ret["nlvr2_labels"][test_batches]
-                )
-            )
-            test_acc = getattr(pl_module, f"test_nlvr2_accuracy")(
-                ret["nlvr2_logits"][test_batches], ret["nlvr2_labels"][test_batches]
-            )
-            pl_module.log(f"nlvr2/test/loss", test_loss)
-            pl_module.log(f"nlvr2/test/accuracy", test_acc)
-
-    return ret
-
 
 def compute_irtr(pl_module, batch):
     is_training_phase = pl_module.training

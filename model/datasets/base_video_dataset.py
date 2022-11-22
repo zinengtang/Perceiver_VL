@@ -29,7 +29,7 @@ class BaseVideoDataset(torch.utils.data.Dataset):
 
         super().__init__()
               
-        self.metadata_dir = data_dir
+        self.data_dir = data_dir
         
         self.video_loader = RawVideoExtractorCV2(size=video_size, max_frames=max_frames)
 

@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from functools import partial
 
 from transformers.models.bert.modeling_bert import BertPredictionHeadTransform
-from model.modules.position_encoding import PositionEncodingProjector
 
 class MeanPooler(nn.Module):
     def __init__(self, hidden_size):

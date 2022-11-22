@@ -56,9 +56,6 @@ class BaseVideoDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.keys)
         
-#     def _get_video_path(self, index):
-#         return os.path.join(self.metadata_dir, 'videos', 'all', self.keys[index] + '.mp4')
-
     def _get_video(self, index):
         video_data = self.video_loader.get_video_data(self.metadata[self.keys[index]]['video_path'])
 
@@ -96,19 +93,15 @@ class BaseVideoDataset(torch.utils.data.Dataset):
     def get_suite(self, index):
         result = None
         while result is None:
-#             try:
-                ret = dict()
-                ret.update(self._get_video(index))
-                if not self.video_only:
-                    ret.update(self._get_text(index))                    
-                result = True
-                for i in range(self.draw_false_text):
-                    ret.update(self._get_false_text(i))
-                for i in range(self.draw_false_video):
-                    ret.update(self._get_false_video(i))
-#             except Exception as e:
-#                 print(f"Error while read sample idx {index}")
-#                 index = random.randint(0, len(self.index_mapper) - 1)
+            ret = dict()
+            ret.update(self._get_video(index))
+            if not self.video_only:
+                ret.update(self._get_text(index))                    
+            result = True
+            for i in range(self.draw_false_text):
+                ret.update(self._get_false_text(i))
+            for i in range(self.draw_false_video):
+                ret.update(self._get_false_video(i))
         return ret
     
     def __getitem__(self, index):
@@ -147,9 +140,7 @@ class BaseVideoDataset(torch.utils.data.Dataset):
                     new_videos[bi] = None
                 else:
                     orig = video[bi]
-#                     print(orig.shape)
                     new_videos[bi, : orig.shape[0], :, : orig.shape[2], : orig.shape[3]] = orig
-#             print(new_videos.size())
             dict_batch[video_key] = new_videos
 
         txt_keys = [k for k in list(dict_batch.keys()) if "text" in k]

@@ -1,6 +1,6 @@
 # Perceiver-VL
 
-### **[Perceiver-VL: Efficient Vision-and-Language Modeling with Iterative Latent Attention]() [WACV 2023 [bib](https://github.com/zinengtang/Perceiver_VL#citation)]**  
+### **[Perceiver-VL: Efficient Vision-and-Language Modeling with Iterative Latent Attention](https://arxiv.org/abs/2211.11701) [WACV 2023 [bib](https://github.com/zinengtang/Perceiver_VL#citation)]**  
 [Zineng Tang*](https://zinengtang.github.io/), [Jaemin Cho*](https://j-min.io/), [Jie Lei](https://jayleicn.github.io/), [Mohit Bansal](https://www.cs.unc.edu/~mbansal/)   
 
 Learning vision-language representation by iterative latent attention that scales with long inputs linearly.

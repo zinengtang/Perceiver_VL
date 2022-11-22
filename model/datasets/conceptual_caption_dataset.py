@@ -6,18 +6,9 @@ from PIL import Image
 class ConceptualCaptionDataset(BaseImageDataset):
     def __init__(self, *args, split="", **kwargs):
         self.split = split
-#         assert split in ["train", "val", "test"]
-#         if split == "test":
-#             split = "val"
-
-#         if split == "train":
-#             names = [f"conceptual_caption_train_{i}" for i in range(30)]
-#         elif split == "val":
-#             names = ["conceptual_caption_val_0"]
         
         super().__init__(*args, **kwargs, )
         
-
     def _load_metadata(self):
         self.folder = self.data_dir+'cc/'
         if self.split == 'train':

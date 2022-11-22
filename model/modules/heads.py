@@ -56,16 +56,3 @@ class MLMHead(nn.Module):
         x = self.transform(x)
         x = self.decoder(x) + self.bias
         return x
-
-class MPPHead(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.transform = BertPredictionHeadTransform(config)
-        self.decoder = nn.Linear(config.hidden_size, 32*32*3)
-
-    def forward(self, x):
-        x = self.transform(x)
-        x = self.decoder(x)       
-        x = torch.tanh(x)
-        return x
-    

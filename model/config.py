@@ -34,7 +34,6 @@ def config():
     draw_false_image = 0
     image_only = False
     imagenet_label_size = 21000
-    image_ct_index = [0, 4, 8]
 
     # Video setting
     video_size = 384
@@ -54,9 +53,9 @@ def config():
     mlm_prob = 0.15
     draw_false_text = 0
     use_text = False
-    text_ct_index = [1, 5, 9]
 
-    # Transformer Setting
+    # Model Setting
+    perceiver_ct_index = [0, 4, 8]
     model_type = 'PerceiverVL'
     vit = "vit_base_patch32_384"
     architecture = 'single'

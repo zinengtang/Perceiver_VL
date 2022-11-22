@@ -1,14 +1,15 @@
 import os
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-# os.environ['CUDA_VISIBLE_DEVICES'] = '0,2,3'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
 import copy
+
+import torch
 import pytorch_lightning as pl
 
 from model.config import ex
 from model.modules import PerceiverVL
 from model.datamodules.multitask_datamodule import MTDataModule
-import torch
-torch.multiprocessing.set_sharing_strategy('file_system')
+
 
 @ex.automain
 def main(_config):

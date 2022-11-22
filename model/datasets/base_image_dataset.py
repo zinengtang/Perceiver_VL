@@ -54,7 +54,7 @@ class BaseImageDataset(torch.utils.data.Dataset):
         return len(self.index_mapper)
 
     def get_raw_image(self, index):
-        return Image.open(self.metadata[self.keys[index]]['video_path']).convert("RGB").resize((self.image_size, self.image_size), Image.ANTIALIAS)
+        return Image.open(self.metadata[self.keys[index]]['video_path']).convert("RGB")
 
     def get_image(self, index):
         image = self.get_raw_image(index)

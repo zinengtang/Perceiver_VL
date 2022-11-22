@@ -25,9 +25,9 @@ class WebvidDataset(BaseVideoDataset):
         return len(self.keys)
    
     def _load_metadata(self):
-
+        self.data_dir = os.path.join(self.data_dir, 'webvid/')
         if self.split=='train':
-            self.metadata = json.load(open('datasets/webvid/train_dict.json'))
+            self.metadata = json.load(open(os.path.join(self.data_dir, 'train_dict.json')))
         else:
-            self.metadata = json.load(open('datasets/webvid/valid_dict.json'))
-            self.metadata = dict(list(self.metadata.items())[:2048])
+            self.metadata = json.load(open(os.path.join(self.data_dir, 'valid_dict.json')))
+            self.metadata = dict(list(self.metadata.items()))

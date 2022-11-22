@@ -1,4 +1,22 @@
+""" Vision Transformer (ViT) in PyTorch
 
+A PyTorch implement of Vision Transformers as described in
+'An Image Is Worth 16 x 16 Words: Transformers for Image Recognition at Scale' - https://arxiv.org/abs/2010.11929
+
+The official jax code is released and available at https://github.com/google-research/vision_transformer
+
+Acknowledgments:
+* The paper authors for releasing code and weights, thanks!
+* I fixed my class token impl based on Phil Wang's https://github.com/lucidrains/vit-pytorch ... check it out
+for some einops/einsum fun
+* Simple transformer style inspired by Andrej Karpathy's https://github.com/karpathy/minGPT
+* Bert reference code checks against Huggingface Transformers and Tensorflow Bert
+
+DeiT model defs and weights from https://github.com/facebookresearch/deit,
+paper `DeiT: Data-efficient Image Transformers` - https://arxiv.org/abs/2012.12877
+
+Hacked together by / Copyright 2020 Ross Wightman
+"""
 import math
 import logging
 from functools import partial
@@ -11,11 +29,9 @@ import hashlib
 import os
 import urllib
 import warnings
-
-from model.modules import objectives
-
-from functools import partial
 from tqdm import tqdm
+import numpy as np
+
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.models.helpers import load_pretrained
@@ -25,40 +41,10 @@ from timm.models.resnetv2 import ResNetV2
 from timm.models.registry import register_model
 from torchvision import transforms
 
+from model.modules import objectives
+from model.modules.pos_embed import get_1d_sincos_pos_embed_from_grid
+
 _logger = logging.getLogger(__name__)
-
-
-class UnNormalize(object):
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
-
-    def __call__(self, tensor):
-        for t, m, s in zip(tensor, self.mean, self.std):
-            t.mul_(s).add_(m)
-        return tensor
-
-
-inception_unnormalize = transforms.Compose(
-    [UnNormalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])]
-)
-
-
-def _cfg(url="", **kwargs):
-    return {
-        "url": url,
-        "num_classes": 1000,
-        "input_size": (3, 224, 224),
-        "pool_size": None,
-        "crop_pct": 0.9,
-        "interpolation": "bicubic",
-        "mean": IMAGENET_DEFAULT_MEAN,
-        "std": IMAGENET_DEFAULT_STD,
-        "first_conv": "patch_embed.proj",
-        "classifier": "head",
-        **kwargs,
-    }
-
 
 
 class Mlp(nn.Module):
@@ -279,7 +265,7 @@ class PatchEmbed(nn.Module):
         x = self.proj(x)
         return x
 
-import numpy as np
+
 
 class PerceiverVL(nn.Module):
     """ Vision Transformer
@@ -293,14 +279,12 @@ class PerceiverVL(nn.Module):
         img_size=224,
         patch_size=16,
         in_chans=3,
-        num_classes=1000,
         embed_dim=768,
         depth=12,
         num_heads=12,
         mlp_ratio=4.0,
         qkv_bias=True,
         qk_scale=None,
-        representation_size=None,
         drop_rate=0.0,
         attn_drop_rate=0.0,
         drop_path_rate=0.0,
@@ -314,14 +298,12 @@ class PerceiverVL(nn.Module):
             img_size (int, tuple): input image size
             patch_size (int, tuple): patch size
             in_chans (int): number of input channels
-            num_classes (int): number of classes for classification head
             embed_dim (int): embedding dimension
             depth (int): depth of transformer
             num_heads (int): number of attention heads
             mlp_ratio (int): ratio of mlp hidden dim to embedding dim
             qkv_bias (bool): enable bias for qkv if True
             qk_scale (float): override default qk scale of head_dim ** -0.5 if set
-            representation_size (Optional[int]): enable and set representation layer (pre-logits) to this value if set
             drop_rate (float): dropout rate
             attn_drop_rate (float): attention dropout rate
             drop_path_rate (float): stochastic depth rate
@@ -331,7 +313,7 @@ class PerceiverVL(nn.Module):
         super().__init__()
         drop_rate = drop_rate if config is None else config["drop_rate"]
 
-        self.num_classes = num_classes
+        self.config = config
         self.num_features = (
             self.embed_dim
         ) = embed_dim  # num_features for consistency with other models
@@ -390,15 +372,7 @@ class PerceiverVL(nn.Module):
             ]
         )
         
-        self.use_mpp = config['use_mpp']
-        if config['use_mpp'] and config["use_decoder"]:
-            self.mask_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-            self.mpp_pos = nn.Embedding(num_patches+1, embed_dim)
-            self.mpp_pos_t = nn.Embedding(64, embed_dim)
-            self.mpp_type = nn.Embedding(2, embed_dim)
-                
         if config['use_text'] and config["use_decoder"]:
-            num_decode_blocks = 0
             
             self.mlm_pos = nn.Embedding(config["max_text_len"], embed_dim)
             self.mlm_type = nn.Embedding(2, embed_dim)                
@@ -417,21 +391,6 @@ class PerceiverVL(nn.Module):
                         post_norm=False
                     )
                     for i in range(1)
-                ] +
-                [
-                    Block(
-                        dim=embed_dim,
-                        num_heads=num_heads,
-                        mlp_ratio=mlp_ratio,
-                        qkv_bias=qkv_bias,
-                        qk_scale=qk_scale,
-                        drop=drop_rate,
-                        attn_drop=attn_drop_rate,
-                        norm_layer=norm_layer,
-                        use_context=False,
-                        post_norm=(i==num_decode_blocks-1)
-                    )
-                    for i in range(num_decode_blocks)
                 ]
             )
         self.use_decoder = config["use_decoder"]
@@ -452,12 +411,11 @@ class PerceiverVL(nn.Module):
             ]
         )
         
-        self.co_norm = norm_layer(embed_dim)        
+        self.co_norm = norm_layer(embed_dim)          
         self.norm = norm_layer(embed_dim)
         self.decoder_norm = norm_layer(embed_dim)
         
         self.layer_drop = config["layer_drop"]
-        
         
         self.latents = nn.Parameter(torch.randn(config['latent_size_s'], embed_dim))
         
@@ -508,7 +466,7 @@ class PerceiverVL(nn.Module):
 
         x = self.patch_embed(_x)        
         x_mask = torch.ones_like(_x.sum(dim=1) != 0).float()[:, None, :, :]
-        
+       
         x_mask = F.interpolate(x_mask, size=(x.shape[2], x.shape[3])).long()
         x_h = x_mask[:, 0].sum(dim=1)[:, 0]
         x_w = x_mask[:, 0].sum(dim=2)[:, 0]
@@ -699,7 +657,9 @@ class PerceiverVL(nn.Module):
             if text_embeds is not None:           
                 text_feats = decoder_feats[:, 1+visual_output_length:]
                 
-        return decoder_feats, text_feats, image_feats, video_feats
+            return decoder_feats, text_feats, image_feats, video_feats
+        
+        return x, text_feats, image_feats, video_feats
     
     def forward_multi(self, text_embeds=None, text_masks=None, text_labels_mlm=None, image_embeds=None, image_masks=None, image_labels_mpp=None, video_embeds=None, video_masks=None, video_labels_mpp=None):
                         
@@ -788,68 +748,14 @@ class PerceiverVL(nn.Module):
     
     def forward(self, text_embeds=None, text_masks=None, text_labels_mlm=None, image_embeds=None, image_masks=None, image_labels_mpp=None, video_embeds=None, video_masks=None, video_labels_mpp=None):
         
-        if config['architecture'] == 'single':
+        if self.config['architecture'] == 'single':
             return self.forward_single(text_embeds=text_embeds, text_masks=text_masks, text_labels_mlm=text_labels_mlm, image_embeds=image_embeds, image_masks=image_masks, image_labels_mpp=image_labels_mpp, video_embeds=video_embeds, video_masks=video_masks, video_labels_mpp=video_labels_mpp)
-        elif config['architecture'] == 'multi':
+        elif self.config['architecture'] == 'multi':
             return self.forward_multi(text_embeds=text_embeds, text_masks=text_masks, text_labels_mlm=text_labels_mlm, image_embeds=image_embeds, image_masks=image_masks, image_labels_mpp=image_labels_mpp, video_embeds=video_embeds, video_masks=video_masks, video_labels_mpp=video_labels_mpp)
-        elif config['architecture'] == 'mixed':
+        elif self.config['architecture'] == 'mixed':
             return self.forward_mixed(text_embeds=text_embeds, text_masks=text_masks, text_labels_mlm=text_labels_mlm, image_embeds=image_embeds, image_masks=image_masks, image_labels_mpp=image_labels_mpp, video_embeds=video_embeds, video_masks=video_masks, video_labels_mpp=video_labels_mpp)
         else:
             raise
-
-def resize_pos_embed(posemb, posemb_new):
-    # Rescale the grid of position embeddings when loading from state_dict. Adapted from
-    # https://github.com/google-research/vision_transformer/blob/00883dd691c63a6830751563748663526e811cee/vit_jax/checkpoint.py#L224
-    _logger.info("Resized position embedding: %s to %s", posemb.shape, posemb_new.shape)
-    ntok_new = posemb_new.shape[1]
-    if True:
-        posemb_tok, posemb_grid = posemb[:, :1], posemb[0, 1:]
-        ntok_new -= 1
-    else:
-        posemb_tok, posemb_grid = posemb[:, :0], posemb[0]
-    gs_old = int(math.sqrt(len(posemb_grid)))
-    gs_new = int(math.sqrt(ntok_new))
-    _logger.info("Position embedding grid-size from %s to %s", gs_old, gs_new)
-    posemb_grid = posemb_grid.reshape(1, gs_old, gs_old, -1).permute(0, 3, 1, 2)
-    posemb_grid = F.interpolate(posemb_grid, size=(gs_new, gs_new), mode="bilinear")
-    posemb_grid = posemb_grid.permute(0, 2, 3, 1).reshape(1, gs_new * gs_new, -1)
-    posemb = torch.cat([posemb_tok, posemb_grid], dim=1)
-    return posemb
-
-
-def _create_vision_transformer(variant, pretrained=False, distilled=False, **kwargs):
-    default_cfg = default_cfgs[variant]
-    default_num_classes = default_cfg["num_classes"]
-    default_img_size = default_cfg["input_size"][-1]
-
-    num_classes = kwargs.pop("num_classes", default_num_classes)
-    img_size = kwargs.pop("img_size", default_img_size)
-    repr_size = kwargs.pop("representation_size", None)
-    if repr_size is not None and num_classes != default_num_classes:
-        # Remove representation layer if fine-tuning. This may not always be the desired action,
-        # but I feel better than doing nothing by default for fine-tuning. Perhaps a better interface?
-        _logger.warning("Removing representation layer for fine-tuning.")
-        repr_size = None
-
-    model_cls = PerceiverVL
-    model = model_cls(
-        img_size=img_size,
-        num_classes=num_classes,
-        representation_size=repr_size,
-        **kwargs,
-    )
-    model.default_cfg = default_cfg
-
-    if pretrained:
-        load_pretrained(
-            model,
-            num_classes=num_classes,
-            in_chans=kwargs.get("in_chans", 3),
-            strict=False,
-        )
-    else:
-        model.apply(objectives.init_weights)
-    return model
 
 
 
@@ -858,13 +764,24 @@ def vit_base_patch16_224(pretrained=False, **kwargs):
     """ ViT-Base (ViT-B/16) from original paper (https://arxiv.org/abs/2010.11929).
     ImageNet-1k weights fine-tuned from in21k @ 224x224, source https://github.com/google-research/vision_transformer.
     """
-    model_kwargs = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, **kwargs)
-    model = _create_vision_transformer(
-        "vit_base_patch16_224", pretrained=pretrained, **model_kwargs
+    model = PerceiverVL(
+        embed_dim=768,
+        patch_size=16,
+        img_size=224,
+        depth=12,
+        num_heads=12,
+        **kwargs,
     )
+    if pretrained:
+        load_pretrained(
+            model,
+            in_chans=3,
+            strict=False,
+        )
+    else:
+        model.apply(objectives.init_weights)
+
     return model
-
-
 
 
 @register_model
@@ -873,32 +790,22 @@ def vit_base_patch32_384(pretrained=False, **kwargs):
     ImageNet-1k weights fine-tuned from in21k @ 384x384, source https://github.com/google-research/vision_transformer.
     """
     model_kwargs = dict(patch_size=32, embed_dim=768, depth=12, num_heads=12, **kwargs)
-    model = _create_vision_transformer(
-        "vit_base_patch32_384", pretrained=pretrained, **model_kwargs
+    model = PerceiverVL(
+        embed_dim=768,
+        patch_size=32,
+        img_size=384,
+        depth=12,
+        num_heads=12,
+        **kwargs,
     )
+    if pretrained:
+        load_pretrained(
+            model,
+            in_chans=3,
+            strict=False,
+        )
+    else:
+        model.apply(objectives.init_weights)
+        
     return model
 
-
-@register_model
-def vit_large_patch16_224(pretrained=False, **kwargs):
-    """ ViT-Large model (ViT-L/32) from original paper (https://arxiv.org/abs/2010.11929).
-    ImageNet-1k weights fine-tuned from in21k @ 224x224, source https://github.com/google-research/vision_transformer.
-    """
-    model_kwargs = dict(patch_size=16, embed_dim=1024, depth=24, num_heads=16, **kwargs)
-    model = _create_vision_transformer(
-        "vit_large_patch16_224", pretrained=pretrained, **model_kwargs
-    )
-    return model
-
-
-
-@register_model
-def vit_large_patch32_384(pretrained=False, **kwargs):
-    """ ViT-Large model (ViT-L/32) from original paper (https://arxiv.org/abs/2010.11929).
-    ImageNet-1k weights fine-tuned from in21k @ 384x384, source https://github.com/google-research/vision_transformer.
-    """
-    model_kwargs = dict(patch_size=32, embed_dim=1024, depth=24, num_heads=16, **kwargs)
-    model = _create_vision_transformer(
-        "vit_large_patch32_384", pretrained=pretrained, **model_kwargs
-    )
-    return model

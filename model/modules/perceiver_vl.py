@@ -609,19 +609,14 @@ class PerceiverVL(nn.Module):
             text_inputs = self.co_norm(text_embeds)        
             inputs = torch.cat([inputs, text_inputs], 1)
             masks = torch.cat([masks, text_masks], 1)
-            
-        if False:
-            x = inputs
-            for i in range(self.depth):                    
-                x, _ = self.blocks[i](x, mask=masks)
-        else:
-            x = self.latents.unsqueeze(0).repeat(inputs.size(0), 1, 1)
-            for i in range(self.depth):                    
-                if i in self.cross_layers_visual:
-                    if i in [0] or random.random() <= self.layer_drop:
-                        x, _ = self.crossatt_blocks_visual[self.cross_layers_visual.index(i)](x, inputs, masks)
 
-                x, _ = self.blocks[i](x)
+        x = self.latents.unsqueeze(0).repeat(inputs.size(0), 1, 1)
+        for i in range(self.depth):                    
+            if i in self.cross_layers_visual:
+                if i in [0] or random.random() <= self.layer_drop:
+                    x, _ = self.crossatt_blocks_visual[self.cross_layers_visual.index(i)](x, inputs, masks)
+
+            x, _ = self.blocks[i](x)
 
         x = self.norm(x)
         

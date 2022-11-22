@@ -1,11 +1,6 @@
 import torch
 import random
 
-from transformers.optimization import AdamW
-from transformers import (
-    get_polynomial_decay_schedule_with_warmup,
-    get_cosine_schedule_with_warmup,
-)
 from model.modules.dist_utils import all_gather
 from model.modules.objectives import compute_irtr_recall, compute_vrtr_recall
 from model.gadgets.my_metrics import Accuracy, VQAScore, Scalar

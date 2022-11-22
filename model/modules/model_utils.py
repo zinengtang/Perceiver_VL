@@ -19,19 +19,10 @@ def set_metrics(pl_module):
             if k == "vqa":
                 setattr(pl_module, f"{split}_vqa_score", VQAScore())
                 setattr(pl_module, f"{split}_{k}_loss", Scalar())
-            elif k == "nlvr2":
-                if split == "train":
-                    setattr(pl_module, f"train_{k}_accuracy", Accuracy())
-                    setattr(pl_module, f"train_{k}_loss", Scalar())
-                else:
-                    setattr(pl_module, f"dev_{k}_accuracy", Accuracy())
-                    setattr(pl_module, f"dev_{k}_loss", Scalar())
-                    setattr(pl_module, f"test_{k}_accuracy", Accuracy())
-                    setattr(pl_module, f"test_{k}_loss", Scalar())
             elif k == "irtr":
                 setattr(pl_module, f"{split}_irtr_loss", Scalar())
-            elif k == "mppd" or k == "mpfr":
-                setattr(pl_module, f"{split}_{k}_loss", Scalar())
+            elif k == "vrtr":
+                setattr(pl_module, f"{split}_vrtr_loss", Scalar())
             elif k == "itm":
                 setattr(pl_module, f"{split}_{k}_accuracy", Accuracy())
                 setattr(pl_module, f"{split}_{k}_loss", Scalar())

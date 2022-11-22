@@ -6,6 +6,7 @@ import model.modules.vision_transformer as vit
 import model.modules.perceiver_vl as pvl
 
 import time
+from transformers.optimization import AdamW
 from transformers.models.bert.modeling_bert import BertConfig, BertEmbeddings
 from model.modules import heads, objectives, model_utils
 import copy
@@ -13,8 +14,7 @@ import warnings
 import random
 warnings.filterwarnings("ignore")
 
-
-
+        
 class PerceiverVL(pl.LightningModule):
     def __init__(self, config, model_type='perceiver'):
         super().__init__()
@@ -23,7 +23,7 @@ class PerceiverVL(pl.LightningModule):
         hs = self.hparams.config["hidden_size"]
         self.learning_rate = config["learning_rate"]   
         
-        if  'ViLT' in config['model_type']:
+        if  'Transformer' in config['model_type']:
             self.transformer = getattr(vit, self.hparams.config["vit"])(
                     pretrained=config["load_pretrain"], config=self.hparams.config
                 )        
@@ -50,7 +50,7 @@ class PerceiverVL(pl.LightningModule):
         self.text_embeddings.apply(objectives.init_weights)
         
         self.token_type_embeddings = nn.Embedding(3, config["hidden_size"])
-        self.token_type_embeddings.apply(objectives.init_weights)       
+        self.token_type_embeddings.apply(objectives.init_weights)
 
         if config["loss_names"]["mlm"] > 0 or config["loss_names"]["mlm_video"] > 0:
             self.mlm_score = heads.MLMHead(bert_config)
@@ -60,17 +60,9 @@ class PerceiverVL(pl.LightningModule):
             self.matching_score = heads.ITMHead(config["hidden_size"])
             self.matching_score.apply(objectives.init_weights)
 
-        # ===================== Downstream ===================== #
-        if (
-            self.hparams.config["load_path"] != ""
-            and not self.hparams.config["test_only"]
-        ):
-            ckpt = torch.load(self.hparams.config["load_path"], map_location="cpu")
-            state_dict = ckpt["state_dict"]
-            self.load_state_dict(state_dict, strict=False)
-
+        # ===================== Downstream ===================== #        
                     
-        if self.hparams.config["loss_names"]["imagenet"] > 0 or self.hparams.config["loss_names"]["imagenet1k"] > 0: 
+        if self.hparams.config["loss_names"]["imagenet"] > 0: 
             vs = self.hparams.config["imagenet_label_size"]
             self.img_classifier = nn.Sequential(
                 heads.MeanPooler(last_size),
@@ -94,14 +86,12 @@ class PerceiverVL(pl.LightningModule):
 
         model_utils.set_metrics(self)
         self.current_tasks = list()
-        
-        self.apply(objectives.init_weights)
-        
+
         if self.hparams.config["load_path"] != "":
-            ckpt = torch.load(self.hparams.config["load_path"], map_location="cpu")
-            state_dict = ckpt["state_dict"]
+            state_dict = torch.load(self.hparams.config["load_path"], map_location="cpu")
+            state_dict = state_dict["state_dict"]
             self.load_state_dict(state_dict, strict=False)
-                    
+
         if config['latent_resize']:
             interpolated_pos = F.interpolate(self.transformer.latents.unsqueeze(0).transpose(1,2), size=(config['latent_resize'])).transpose(1,2).squeeze(0)
             self.transformer.latents = nn.Parameter(interpolated_pos)
@@ -125,23 +115,18 @@ class PerceiverVL(pl.LightningModule):
         else:
             imgkey = "image"
             
-        videokey = "video_data"
-        
-
-        use_image = imgkey in list(batch.keys())
-        use_video = videokey in list(batch.keys())
+        videokey = "video_data"        
+        use_image = imgkey in list(batch.keys()) or image_embeds is not None
+        use_video = videokey in list(batch.keys()) or video_embeds is not None
         do_mlm = "_mlm" if mask_text else ""
-        
-        if f"text_ids{do_mlm}" in list(batch.keys()):
-            use_text = True
-        else:
-            use_text = False
+        use_text = f"text_ids{do_mlm}" in list(batch.keys())      
             
         if use_text:    
             text_ids = batch[f"text_ids{do_mlm}"]
             text_labels = batch[f"text_labels{do_mlm}"]
             text_masks = batch[f"text_masks"]
-            text_embeds = self.text_embeddings(text_ids)
+            if not self.model_type == 'perceiverclip':
+                text_embeds = self.text_embeddings(text_ids)
             text_labels_mlm = batch[f"text_labels_mlm"] if f"text_labels_mlm" in batch.keys() and mask_text else None
         else:
             text_ids = None
@@ -151,8 +136,9 @@ class PerceiverVL(pl.LightningModule):
             text_labels_mlm = None
 
         if use_image:
-            if image_embeds is None and image_masks is None:
-                img = batch[imgkey][0]
+            img = batch[imgkey][0]
+            if image_embeds is None and image_masks is None and self.model_type != 'perceiverclip':
+                
                 (
                     image_embeds,
                     image_masks,
@@ -179,8 +165,11 @@ class PerceiverVL(pl.LightningModule):
             orig_image = None
             
         if use_video:
-            if video_embeds is None and video_masks is None:                
-                video = batch[videokey]                
+            
+            video = batch[videokey]    
+            
+            if video_embeds is None and video_masks is None and self.model_type != 'perceiverclip':  
+                            
                 (
                     video_embeds,
                     video_masks,
@@ -208,18 +197,8 @@ class PerceiverVL(pl.LightningModule):
             
         co_embeds = []
         co_masks = []
-                                      
-        if use_text:
-            text_embeds += self.token_type_embeddings(torch.zeros_like(text_masks))                         
         
-        if use_image:
-            image_embeds += self.token_type_embeddings(torch.full_like(image_masks, image_token_type_idx))                
-            
-        if use_video:
-            video_embeds += self.token_type_embeddings(torch.full_like(video_masks, video_token_type_idx))
-                                
-            
-        text_feats, image_feats, video_feats = None, None, None
+        text_feats, image_feats, video_feats, cls_feats = None, None, None, None
         image_labels_mlm = video_labels_mlm = None
 
         if self.model_type == 'transformer':
@@ -291,6 +270,10 @@ class PerceiverVL(pl.LightningModule):
         if "imagenet" in self.current_tasks:
             ret.update(objectives.compute_imgcls(self, batch))
 
+        # Natural Language for Visual Reasoning 2
+        if "nlvr2" in self.current_tasks:
+            ret.update(objectives.compute_nlvr2(self, batch))
+
         # Image Retrieval and Text Retrieval
         if "irtr" in self.current_tasks:
             ret.update(objectives.compute_irtr(self, batch))
@@ -345,5 +328,4 @@ class PerceiverVL(pl.LightningModule):
         model_utils.epoch_wrapup(self)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate, eps=1e-8, betas=(0.9, 0.98), weight_decay=0.001)

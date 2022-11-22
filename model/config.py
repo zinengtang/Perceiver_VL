@@ -59,7 +59,7 @@ def config():
     # Transformer Setting
     model_type = 'PerceiverVL'
     vit = "vit_base_patch32_384"
-    architecture = 'multi'
+    architecture = 'single'
     hidden_size = 768
     num_heads = 12
     num_layers = 12

@@ -87,6 +87,7 @@ def config():
     get_vt_recall_metric = False
 
     # PL Trainer Setting
+    alternate_batch = False
     resume_from = None
     fast_dev_run = False
     val_check_interval = 1.0
@@ -160,6 +161,7 @@ def task_mlm_itm_vtm():
     draw_false_image = 1
     draw_false_video = 1
     use_text = True
+    alternate_batch = True
     
 @ex.named_config
 def task_finetune_msrvtt_vtm():

@@ -9,5 +9,5 @@ _transforms = {
 }
 
 
-def keys_to_transforms(keys: list, size=224):
-    return [_transforms[key](size=size) for key in keys]
+def keys_to_transforms(keys: list, size=384):
+    return [_transforms[key](size) for key in keys]

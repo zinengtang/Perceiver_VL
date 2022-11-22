@@ -9,7 +9,6 @@ def _loss_names(d):
         "vtm_wpa": 0,
         "mlm": 0,
         "mlm_video":0,
-        "recon": 0,
         "mpp": 0,
         "mpp_video": 0,
         "vqa": 0,
@@ -71,10 +70,8 @@ def config():
     mlp_ratio = 4
     drop_rate = 0.1
     latent_size_s = 128
-    latent_size_t = 4
     latent_resize = False
     use_decoder = False
-    random_proj = False
     layer_drop = 0.5
     use_mpp = False
 

@@ -70,17 +70,6 @@ bash scripts/msrvtt_vrtr_finetune.sh
 bash scripts/vqa_finetune.sh
 ```
 
-<!-- ## Released Models
-
-The model weights are hosted in [Huggingface Hub](https://huggingface.co/Perceiver-VL/models/tree/main).  
-
-The details of each released Perceiver-VL models are described in the table below.  
-
-| Training    | Component | Link |
-| --- | --- | --- |
-| Pre-trained on Webvid + GCC videos and images|Encoder + Decoder|[[link]](https://huggingface.co/Percever-VL/models/resolve/main/Percever-VL.ckpt)|
- -->
-
 
 ## Code Structure
 
@@ -110,8 +99,8 @@ Perceiver_VL
 │   └── config.py                   # all configurations
 │
 ├── scripts                         # all scripts
-│   ├── finetune_mosei.sh 
-│   ├── pretrain_mae_vam.sh
+│   ├── vqa_finetune.sh 
+│   ├── co_pretrain.sh
 │   └── ... 
 │
 ├── run.py                          # main

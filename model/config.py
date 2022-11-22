@@ -6,17 +6,12 @@ def _loss_names(d):
     ret = {
         "itm": 0,
         "vtm": 0,
-        "vtm_wpa": 0,
         "mlm": 0,
         "mlm_video":0,
-        "mpp": 0,
-        "mpp_video": 0,
         "vqa": 0,
-        "nlvr2": 0,
         "irtr": 0,
         "vrtr": 0,
-        "imagenet": 0,
-        "imagenet1k": 0,    
+        "imagenet": 0,  
     }
     ret.update(d)
     return ret
@@ -64,6 +59,7 @@ def config():
     # Transformer Setting
     model_type = 'PerceiverVL'
     vit = "vit_base_patch32_384"
+    architecture = 'multi'
     hidden_size = 768
     num_heads = 12
     num_layers = 12
@@ -132,33 +128,11 @@ def task_cls_imagenet():
     use_text = False
     
     
-@ex.named_config
-def task_cls_imagenet1k():
-    exp_name = "cls_imagenet1k"
-    datasets = ["imagenet1k"]
-    loss_names = _loss_names({"imagenet": 1})
-    batch_size = 4096
-    imagenet_label_size = 1001
-    max_epoch = 100
-    max_image_len = 200
-    learning_rate = 8e-4
-    use_text = False
-    
 # Named configs for "task" which define datasets, loss_names and desired batch_size, warmup_steps, epochs, and exp_name
 @ex.named_config
 def task_mlm_itm():
     exp_name = "mlm_itm"
     datasets = ["gcc"]
-    loss_names = _loss_names({"itm": 1, "mlm": 1})
-    max_epoch = 10
-    max_image_len = 200
-    use_text = True
-
-    
-@ex.named_config
-def task_multi_mlm_itm():
-    exp_name = "multi_mlm_itm_randaug"
-    datasets = ["coco", "vg", "sbu", "gcc"]
     loss_names = _loss_names({"itm": 1, "mlm": 1})
     max_epoch = 10
     max_image_len = 200
@@ -203,6 +177,7 @@ def task_finetune_msrvtt_vtm():
     draw_false_text = 16
     draw_false_video = 1
 
+    
 @ex.named_config
 def task_finetune_vqa():
     exp_name = "finetune_vqa"

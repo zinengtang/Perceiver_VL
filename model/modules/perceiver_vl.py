@@ -25,9 +25,6 @@ from timm.models.resnetv2 import ResNetV2
 from timm.models.registry import register_model
 from torchvision import transforms
 
-from model.modules.pos_embed import get_1d_sincos_pos_embed_from_grid
-from model.modules.position_encoding import PositionEncodingProjector
-
 _logger = logging.getLogger(__name__)
 
 
@@ -791,11 +788,11 @@ class PerceiverVL(nn.Module):
     
     def forward(self, text_embeds=None, text_masks=None, text_labels_mlm=None, image_embeds=None, image_masks=None, image_labels_mpp=None, video_embeds=None, video_masks=None, video_labels_mpp=None):
         
-        if config['architecture'] = 'single':
+        if config['architecture'] == 'single':
             return self.forward_single(text_embeds=text_embeds, text_masks=text_masks, text_labels_mlm=text_labels_mlm, image_embeds=image_embeds, image_masks=image_masks, image_labels_mpp=image_labels_mpp, video_embeds=video_embeds, video_masks=video_masks, video_labels_mpp=video_labels_mpp)
-        elif config['architecture'] = 'multi':
+        elif config['architecture'] == 'multi':
             return self.forward_multi(text_embeds=text_embeds, text_masks=text_masks, text_labels_mlm=text_labels_mlm, image_embeds=image_embeds, image_masks=image_masks, image_labels_mpp=image_labels_mpp, video_embeds=video_embeds, video_masks=video_masks, video_labels_mpp=video_labels_mpp)
-        elif config['architecture'] = 'mixed':
+        elif config['architecture'] == 'mixed':
             return self.forward_mixed(text_embeds=text_embeds, text_masks=text_masks, text_labels_mlm=text_labels_mlm, image_embeds=image_embeds, image_masks=image_masks, image_labels_mpp=image_labels_mpp, video_embeds=video_embeds, video_masks=video_masks, video_labels_mpp=video_labels_mpp)
         else:
             raise

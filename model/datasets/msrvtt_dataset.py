@@ -1,7 +1,4 @@
 import random
-import torch
-import io
-import pyarrow as pa
 import os
 import glob
 from tqdm import tqdm
@@ -9,7 +6,6 @@ import json
 
 import pandas as pd
 import numpy as np
-from model.datasets.rawvideo_utils import RawVideoExtractorCV2
 from .base_video_dataset import BaseVideoDataset
 
 

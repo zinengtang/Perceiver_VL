@@ -303,9 +303,15 @@ class PerceiverVL(pl.LightningModule):
         return ret
 
     def training_step(self, batch, batch_idx):    
-        model_utils.set_task(self)    
-        output = self(batch)
-        total_loss = sum([v for k, v in output.items() if "loss" in k])
+        model_utils.set_task(self)   
+        total_loss = 0.0
+        if '0'in batch.keys():
+            for key in batch:
+                output = self(batch[key])
+                total_loss += sum([v for k, v in output.items() if "loss" in k])
+        else:    
+            output = self(batch)
+            total_loss += sum([v for k, v in output.items() if "loss" in k])
         return total_loss        
     
     def training_epoch_end(self, outs):
@@ -313,7 +319,11 @@ class PerceiverVL(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         model_utils.set_task(self)
-        output = self(batch)        
+        if '0'in batch.keys():
+            for batch_key in batch:
+                output = self(batch[batch_key])
+        else:
+            output = self(batch)        
                 
     def validation_epoch_end(self, outs):
         model_utils.epoch_wrapup(self)

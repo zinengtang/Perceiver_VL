@@ -72,7 +72,6 @@ def config():
     use_mpp = False
 
     # Optimizer Setting
-    alternate_batch = False
     optim_type = "adamw"
     learning_rate = 1e-4
     weight_decay = 0.000

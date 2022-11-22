@@ -42,7 +42,6 @@ from timm.models.registry import register_model
 from torchvision import transforms
 
 from model.modules import objectives
-from model.modules.pos_embed import get_1d_sincos_pos_embed_from_grid
 
 _logger = logging.getLogger(__name__)
 

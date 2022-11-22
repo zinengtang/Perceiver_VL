@@ -34,8 +34,6 @@ class BaseImageDataset(torch.utils.data.Dataset):
         super().__init__()
 
         self.transforms = keys_to_transforms(transform_keys, size=image_size)
-#         self.text_column_name = text_column_name
-#         self.names = names
         self.max_text_len = max_text_len
         self.draw_false_image = draw_false_image
         self.draw_false_text = draw_false_text
@@ -77,9 +75,7 @@ class BaseImageDataset(torch.utils.data.Dataset):
         text = self.metadata[self.keys[raw_index]]['text']
         if isinstance(text, list):
             text = random.choice(text)
-#         index, caption_index = self.index_mapper[raw_index]
-
-#         text = self.all_texts[index][caption_index]
+            
         encoding = self.tokenizer(
             text,
             padding="max_length",
@@ -108,22 +104,17 @@ class BaseImageDataset(torch.utils.data.Dataset):
     def get_suite(self, index):
         result = None
         while result is None:
-#             try:
-                ret = dict()
-                ret.update(self.get_image(index))
-                if not self.image_only:
-                    txt = self.get_text(index)
-#                     ret.update({"replica": True if txt["cap_index"] > 0 else False})
-                    ret.update(txt)
+            ret = dict()
+            ret.update(self.get_image(index))
+            if not self.image_only:
+                txt = self.get_text(index)
+                ret.update(txt)
 
-                for i in range(self.draw_false_image):
-                    ret.update(self.get_false_image(i))
-                for i in range(self.draw_false_text):
-                    ret.update(self.get_false_text(i))
-                result = True
-#             except Exception as e:
-#                 print(f"Error while read file idx {index} in {self.names[0]} -> {e}")
-#                 index = random.randint(0, len(self.index_mapper) - 1)
+            for i in range(self.draw_false_image):
+                ret.update(self.get_false_image(i))
+            for i in range(self.draw_false_text):
+                ret.update(self.get_false_text(i))
+            result = True
         return ret
 
     def collate(self, batch, mlm_collator):

@@ -6,22 +6,20 @@ from torchvision import transforms
 from .randaug import RandAugment
 
 
-def pixelbert_transform(size=800):
-    longer = int((1333 / 800) * size)
+def pixelbert_transform(img_size=384):
     return transforms.Compose(
         [
-#             MinMaxResize(shorter=size, longer=longer),
+            transforms.Resize(img_size),
             transforms.ToTensor(),
             inception_normalize,
         ]
     )
 
 
-def pixelbert_transform_randaug(size=800):
-    longer = int((1333 / 800) * size)
+def pixelbert_transform_randaug():
     trs = transforms.Compose(
         [
-#             MinMaxResize(shorter=size, longer=longer),
+            transforms.Resize(img_size),
             transforms.ToTensor(),
             inception_normalize,
         ]

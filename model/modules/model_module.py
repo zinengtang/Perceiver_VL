@@ -14,13 +14,7 @@ import warnings
 import random
 warnings.filterwarnings("ignore")
 
-def set_grad_false(module):
-    for name, param in module.named_parameters():
-        param.requires_grad = False
 
-def set_grad_true(module):
-    for name, param in module.named_parameters():
-        param.requires_grad = True
 
 class PerceiverVL(pl.LightningModule):
     def __init__(self, config, model_type='perceiver'):
@@ -57,10 +51,7 @@ class PerceiverVL(pl.LightningModule):
         self.text_embeddings.apply(objectives.init_weights)
         
         self.token_type_embeddings = nn.Embedding(3, config["hidden_size"])
-        self.token_type_embeddings.apply(objectives.init_weights)
-#         if self.use_prenorm_emb:
-#             self.position_embeddings = nn.Embedding(2048, config["hidden_size"])
-#             self.position_embeddings.apply(objectives.init_weights)        
+        self.token_type_embeddings.apply(objectives.init_weights)       
 
         if config["loss_names"]["mlm"] > 0 or config["loss_names"]["mlm_video"] > 0:
             self.mlm_score = heads.MLMHead(bert_config)
@@ -69,10 +60,6 @@ class PerceiverVL(pl.LightningModule):
         if config["loss_names"]["itm"] > 0 or config["loss_names"]["vtm"] > 0:
             self.matching_score = heads.ITMHead(config["hidden_size"])
             self.matching_score.apply(objectives.init_weights)
-
-        if config["loss_names"]["mpp"] > 0 or config["loss_names"]["mpp_video"] > 0:
-            self.mpp_score = heads.MPPHead(bert_config)
-            self.mpp_score.apply(objectives.init_weights)
 
         # ===================== Downstream ===================== #
         if (
@@ -106,22 +93,6 @@ class PerceiverVL(pl.LightningModule):
             )
             self.vqa_classifier.apply(objectives.init_weights)
 
-        if self.hparams.config["loss_names"]["nlvr2"] > 0:
-            self.nlvr2_classifier = nn.Sequential(
-                heads.Pooler(last_size),                
-                nn.Linear(hs * 2, hs * 2),
-                nn.LayerNorm(hs * 2),
-                nn.GELU(),
-                nn.Linear(hs * 2, 2),
-            )
-            self.nlvr2_classifier.apply(objectives.init_weights)
-            emb_data = self.token_type_embeddings.weight.data
-            self.token_type_embeddings = nn.Embedding(3, hs)
-            self.token_type_embeddings.apply(objectives.init_weights)
-            self.token_type_embeddings.weight.data[0, :] = emb_data[0, :]
-            self.token_type_embeddings.weight.data[1, :] = emb_data[1, :]
-            self.token_type_embeddings.weight.data[2, :] = emb_data[1, :]
-
         model_utils.set_metrics(self)
         self.current_tasks = list()
         
@@ -135,22 +106,7 @@ class PerceiverVL(pl.LightningModule):
         if config['latent_resize']:
             interpolated_pos = F.interpolate(self.transformer.latents.unsqueeze(0).transpose(1,2), size=(config['latent_resize'])).transpose(1,2).squeeze(0)
             self.transformer.latents = nn.Parameter(interpolated_pos)
-            
-            if config["random_proj"]:
-                patch_size = (config['image_size']//32)**2+1
-                for block in self.transformer.crossatt_blocks_visual:
-                    interpolated_pos = F.interpolate(block.attn.cross_proj_map, size=(config['latent_resize'], patch_size))
-                    self.transformer.crossatt_blocks_visual[0].attn.cross_proj_map = nn.Parameter(interpolated_pos)
-#         set_grad_false(self.text_embeddings)
-#         set_grad_false(self.token_type_embeddings)
-#         set_grad_false(self.mlm_score)
-#         set_grad_false(self.matching_score)
-#         set_grad_false(self.transformer)
-#         set_grad_true(self.transformer.crossatt_blocks_visual)
-#         set_grad_true(self.transformer.prior_proj_layer)
-#         set_grad_true(self.transformer.blocks)                
-#         self.transformer.latents.requires_grad = True
-        
+
         
     def infer(
         self,

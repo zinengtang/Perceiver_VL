@@ -8,7 +8,6 @@ import model.modules.perceiver_vl as pvl
 import time
 from transformers.models.bert.modeling_bert import BertConfig, BertEmbeddings
 from model.modules import heads, objectives, model_utils
-from model.modules.position_encoding import PositionEncodingProjector
 import copy
 import warnings
 import random

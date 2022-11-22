@@ -60,7 +60,7 @@ def img_id2_path(img_id):
         return f"test2015/{img_id}.jpg"
     
     
-class VQADataset(BaseImageDataset):
+class VQAv2Dataset(BaseImageDataset):
     def __init__(self, *args, split="", **kwargs):
         self.split = split
 

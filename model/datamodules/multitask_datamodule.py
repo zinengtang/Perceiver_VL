@@ -15,6 +15,9 @@ class MTDataModule(LightningDataModule):
         assert len(datamodule_keys) > 0
 
         super().__init__()
+
+        
+        self.alternate_batch = _config["alternate_batch"]
         
         self.dm_keys = datamodule_keys
         self.dm_dicts = {key: _datamodules[key](_config) for key in datamodule_keys}
@@ -35,56 +38,120 @@ class MTDataModule(LightningDataModule):
         for dm in self.dms:
             dm.setup(stage)
             
-        self.train_dataset = ConcatDataset([dm.train_dataset for dm in self.dms])
-        self.val_dataset = ConcatDataset([dm.val_dataset for dm in self.dms])
-        self.test_dataset = ConcatDataset([dm.test_dataset for dm in self.dms])
-        self.tokenizer = self.dms[0].tokenizer
+        if self.alternate_batch:
+            
+            self.train_dataset = [dm.train_dataset for dm in self.dms]
+            self.val_dataset = [dm.val_dataset for dm in self.dms]
+            self.test_dataset = [dm.test_dataset for dm in self.dms]
+            self.tokenizer = self.dms[0].tokenizer
 
-        self.collate = functools.partial(
-            self.dms[0].train_dataset.collate, mlm_collator=self.dms[0].mlm_collator,
-        )
+            self.collate = [functools.partial(
+                dm.train_dataset.collate, mlm_collator=dm.mlm_collator,
+            ) for dm in self.dms]
 
-        if self.dist:
-            self.train_sampler = DistributedSampler(self.train_dataset, shuffle=True)
-            self.val_sampler = DistributedSampler(self.val_dataset, shuffle=False)
-            self.test_sampler = DistributedSampler(self.test_dataset, shuffle=False)
+            if self.dist:
+                self.train_sampler = [DistributedSampler(dset, shuffle=True) for dset in self.train_dataset]
+                self.val_sampler = [DistributedSampler(dset, shuffle=False) for dset in self.val_dataset]
+                self.test_sampler = [DistributedSampler(dset, shuffle=False) for dset in self.test_dataset]
+            else:
+                self.train_sampler = None
+                self.val_sampler = None
+                self.test_sampler = None
         else:
-            self.train_sampler = None
-            self.val_sampler = None
-            self.test_sampler = None
+            self.train_dataset = ConcatDataset([dm.train_dataset for dm in self.dms])
+            self.val_dataset = ConcatDataset([dm.val_dataset for dm in self.dms])
+            self.test_dataset = ConcatDataset([dm.test_dataset for dm in self.dms])
+            self.tokenizer = self.dms[0].tokenizer
+
+            self.collate = functools.partial(
+                self.dms[0].train_dataset.collate, mlm_collator=self.dms[0].mlm_collator,
+            )
+
+            if self.dist:
+                self.train_sampler = DistributedSampler(self.train_dataset, shuffle=True)
+                self.val_sampler = DistributedSampler(self.val_dataset, shuffle=False)
+                self.test_sampler = DistributedSampler(self.test_dataset, shuffle=False)
+            else:
+                self.train_sampler = None
+                self.val_sampler = None
+                self.test_sampler = None
                 
     def train_dataloader(self):
+        
+        if self.alternate_batch:
+            loaders = {}
+            for i, dset in enumerate(self.train_dataset):
+                loaders[str(i)] = DataLoader(
+                    self.train_dataset[i],
+                    batch_size=self.batch_size,
+                    sampler=self.train_sampler[i],
+                    num_workers=self.num_workers,
+                    collate_fn=self.collate[i],
+                )
+            
+            return loaders
 
-        loader = DataLoader(
-            self.train_dataset,
-            batch_size=self.batch_size,
-            sampler=self.train_sampler,
-            num_workers=self.num_workers,
-            collate_fn=self.collate,
-        )
-        return loader
+        else:
+            loader = DataLoader(
+                self.train_dataset,
+                batch_size=self.batch_size,
+                sampler=self.train_sampler,
+                num_workers=self.num_workers,
+                collate_fn=self.collate,
+            )
+            return loader
 
     def val_dataloader(self, batch_size=None):
-
-        loader = DataLoader(
-            self.val_dataset,
-            batch_size=batch_size if batch_size is not None else self.batch_size,
-            sampler=self.val_sampler,
-            num_workers=self.num_workers,
-            collate_fn=self.collate,
-        )
-        return loader
+        
+        if self.alternate_batch:
+            loaders = {}
+            for i, dset in enumerate(self.val_dataset):
+                loaders[str(i)] = DataLoader(
+                    self.val_dataset[i],
+                    batch_size=self.batch_size,
+                    sampler=self.val_sampler[i],
+                    num_workers=self.num_workers,
+                    collate_fn=self.collate[i],
+                )
+            
+            loaders = CombinedLoader(loaders, "max_size_cycle")
+            return loaders
+        
+        else:
+            loader = DataLoader(
+                self.val_dataset,
+                batch_size=batch_size if batch_size is not None else self.batch_size,
+                sampler=self.val_sampler,
+                num_workers=self.num_workers,
+                collate_fn=self.collate,
+            )
+            return loader
 
     def test_dataloader(self):
-
-        loader = DataLoader(
-            self.test_dataset,
-            batch_size=self.batch_size,
-            sampler=self.test_sampler,
-            num_workers=self.num_workers,
-            collate_fn=self.collate,
-        )
-        return loader
+        
+        if self.alternate_batch:
+            loaders = {}
+            for i, dset in enumerate(self.test_dataset):
+                loaders[str(i)] = DataLoader(
+                    self.test_dataset[i],
+                    batch_size=self.batch_size,
+                    sampler=self.test_sampler[i],
+                    num_workers=self.num_workers,
+                    collate_fn=self.collate[i],
+                )
+            
+            loaders = CombinedLoader(loaders, "max_size_cycle")
+            return loaders
+        
+        else:
+            loader = DataLoader(
+                self.test_dataset,
+                batch_size=self.batch_size,
+                sampler=self.test_sampler,
+                num_workers=self.num_workers,
+                collate_fn=self.collate,
+            )
+            return loader
 
 def joint_collate(self, batch, mlm_collator):
     batch_size = len(batch)

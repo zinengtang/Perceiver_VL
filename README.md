@@ -36,6 +36,8 @@ pip install -r requirements.txt
 
 ## Training
 
+TODO: Finish datasets/tasks instructions and scripts
+
 ### Pretraining (scripts)
 
 ```

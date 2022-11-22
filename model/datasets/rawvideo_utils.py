@@ -1,13 +1,16 @@
+import random
+import time
+
 import torch
 import numpy as np
-from PIL import Image
-import random
-from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 import cv2
-import time
 import ffmpeg
+
+from PIL import Image
 from decord import VideoReader
 from decord import cpu, gpu
+from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
+
 
 class RawVideoExtractorCV2():
     

@@ -287,6 +287,7 @@ class PerceiverVL(nn.Module):
         drop_rate=0.0,
         attn_drop_rate=0.0,
         drop_path_rate=0.0,
+        perceiver_ct_index=[0, 4, 8],
         norm_layer=None,
         add_norm_before_transformer=False,
         no_patch_embed_bias=False,
@@ -351,7 +352,7 @@ class PerceiverVL(nn.Module):
             self.joint_inputs = False
             
         self.depth = depth
-        self.cross_layers_visual = [0, 4, 8]        
+        self.cross_layers_visual = perceiver_ct_index
         num_cross_blocks = len(self.cross_layers_visual)
         
         self.crossatt_blocks_visual = nn.ModuleList(
@@ -764,6 +765,7 @@ def vit_base_patch16_224(pretrained=False, **kwargs):
         img_size=224,
         depth=12,
         num_heads=12,
+        perceiver_ct_index=[0, 4, 8],
         **kwargs,
     )
     if pretrained:
@@ -790,6 +792,7 @@ def vit_base_patch32_384(pretrained=False, **kwargs):
         img_size=384,
         depth=12,
         num_heads=12,
+        perceiver_ct_index=[0, 4, 8],
         **kwargs,
     )
     if pretrained:

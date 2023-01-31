@@ -108,7 +108,7 @@ class CrossAttention(nn.Module):
         if mask is not None:
             mask = mask.bool()
             attn = attn.masked_fill(~mask[:, None, None, :], float("-inf"))
-            attn = torch.tanh(attn)
+
         attn = attn.softmax(dim=-1) 
         attn = self.attn_drop(attn)
 

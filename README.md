@@ -60,6 +60,9 @@ bash scripts/gcc_pretrain.sh
 bash scripts/imagenet_pretrain.sh
 ```
 
+### Pretrained Checkpoint
+Download Checkpoint [[link]](https://huggingface.co/murgelab/PerceiverVL/resolve/main/perceivervl_mlm_itm_vtm.ckpt)
+
 ### Finetuning on Downstream (scripts)
 
 ```
